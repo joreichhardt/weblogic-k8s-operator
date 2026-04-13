@@ -12,5 +12,12 @@ quickstart/tools/
 secrets/*
 !secrets/sealed-*.yaml
 
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+
 # macOS
 .DS_Store

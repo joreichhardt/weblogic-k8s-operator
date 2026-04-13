@@ -76,7 +76,43 @@ Namespace: weblogic-domain1-ns
 
 Zugang zum Oracle Container Registry (OCR) ist erforderlich für das WebLogic Base-Image.
 
-## Setup
+## Deployment mit Terraform
+
+Alternativ zum manuellen Setup kann die gesamte Infrastruktur mit Terraform aufgesetzt werden. Terraform übernimmt dabei Namespaces, Helm-Releases und Kubernetes-Ressourcen — das Bauen des Auxiliary Image bleibt ein separater Build-Schritt.
+
+```bash
+cd terraform
+
+cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars mit OCR-Credentials befüllen (wird nicht eingecheckt)
+
+terraform init
+terraform apply
+```
+
+**Was Terraform deployt:**
+
+| Ressource | Tool |
+|-----------|------|
+| Namespaces (`weblogic-operator-ns`, `weblogic-domain1-ns`) | kubernetes-Provider |
+| Sealed Secrets Controller | helm-Provider |
+| Traefik v3 | helm-Provider |
+| WebLogic Kubernetes Operator | helm-Provider |
+| OCR Pull Secret | kubernetes-Provider |
+| Sealed Secrets (Credentials) | kubectl-Provider |
+| Domain, Cluster | kubectl-Provider |
+| Traefik IngressRoutes | kubectl-Provider |
+
+**Was außerhalb von Terraform bleibt:**
+
+- Auxiliary Image bauen (`imagetool`) — gehört in eine Build-Pipeline
+- Sealed Secrets neu versiegeln (`kubeseal`) — einmaliger CLI-Schritt, Output landet als YAML im Repo
+
+> `terraform.tfvars` enthält OCR-Credentials und darf nicht eingecheckt werden — ist bereits in `.gitignore` abgedeckt durch `secrets/*`. Alternativ Umgebungsvariablen verwenden: `TF_VAR_ocr_username`, `TF_VAR_ocr_password`.
+
+---
+
+## Setup (manuell)
 
 ### 1. Minikube starten
 
