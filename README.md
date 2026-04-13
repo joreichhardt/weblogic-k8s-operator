@@ -28,6 +28,15 @@ Traditionell läuft WebLogic auf dedizierten VMs oder Bare-Metal-Servern — auf
 - **Namespace-Isolation:** Jede Domain läuft in einem eigenen Namespace mit eigenen Credentials und Netzwerkregeln — mehrere Teams oder Applikationen auf demselben Cluster ohne gegenseitige Beeinflussung.
 - **Keine gemeinsame Middleware:** Kein geteilter Application-Server für mehrere Apps, der bei einem Fehler alles mitreißt.
 
+### Bare-Metal-Betrieb
+
+Besonders auf Bare Metal entfaltet Kubernetes seinen vollen Vorteil: Klassische Setups benötigen Hypervisor + VM + Betriebssystem + Application-Server — jede Schicht kostet Latenz, RAM und Verwaltungsaufwand. Auf Bare Metal entfällt die Virtualisierungsschicht vollständig.
+
+- **Direkte Hardware-Nutzung:** Kein Hypervisor-Overhead, keine NUMA-Probleme durch VM-Boundaries, voller Zugriff auf CPU-Features und Speicherbandbreite.
+- **Geringere Latenz:** Netzwerk-I/O und Speicherzugriff laufen ohne Virtualisierungs-Indirektion — relevant für transaktionsintensive WebLogic-Workloads.
+- **Weniger bewegliche Teile:** Statt VM-Images, Snapshots und Hypervisor-Updates nur noch Container-Images und Kubernetes — der Betrieb wird schlanker und planbarer.
+- **Ressourceneffizienz:** RAM und CPU, die sonst dem Hypervisor gehören, stehen den WebLogic-Domains direkt zur Verfügung.
+
 ### Portabilität
 
 - **Läuft überall:** Minikube lokal, AKS, EKS, OKE oder On-Premises — das gleiche YAML, die gleiche Toolchain.
