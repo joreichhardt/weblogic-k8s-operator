@@ -1,0 +1,50 @@
+apiVersion: weblogic.oracle/v9
+kind: Domain
+metadata:
+  name: sample-domain1
+  namespace: weblogic-domain1-ns
+  labels:
+    weblogic.domainUID: sample-domain1
+spec:
+  domainUID: sample-domain1
+
+  configuration:
+    model:
+      auxiliaryImages:
+        - image: "quick-start-aux-image:v6"
+          imagePullPolicy: IfNotPresent
+      runtimeEncryptionSecret: sample-domain1-runtime-encryption-secret
+
+  domainHomeSourceType: FromModel
+  domainHome: /u01/domains/sample-domain1
+
+  image: container-registry.oracle.com/middleware/weblogic:15.1.1.0-generic-jdk17-ol8
+  imagePullPolicy: IfNotPresent
+
+  imagePullSecrets:
+    - name: ocr-secret
+
+  webLogicCredentialsSecret:
+    name: sample-domain1-weblogic-credentials
+
+  includeServerOutInPodLog: true
+  serverStartPolicy: IfNeeded
+
+  serverPod:
+    env:
+      - name: JAVA_OPTIONS
+        value: "-Dweblogic.StdoutDebugEnabled=false"
+      - name: USER_MEM_ARGS
+        value: "-Djava.security.egd=file:/dev/./urandom -Xms128m -Xmx256m"
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+
+  replicas: 1
+
+  clusters:
+    - name: sample-domain1-cluster-1
+
+  restartVersion: "6"
+  introspectVersion: "6"

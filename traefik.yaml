@@ -1,0 +1,127 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: weblogic-tls-headers
+  namespace: weblogic-domain1-ns
+spec:
+  headers:
+    customRequestHeaders:
+      WL-Proxy-SSL: "true"
+      X-Forwarded-Proto: "https"
+
+---
+# HTTPS route für /console
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sample-domain1-console
+  namespace: weblogic-domain1-ns
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: PathPrefix(`/console`)
+      kind: Rule
+      middlewares:
+        - name: weblogic-tls-headers
+      services:
+        - name: sample-domain1-admin-server
+          port: 7001
+  tls: {}
+
+---
+# HTTP route für /console (für WebLogic-Redirects auf http://IP:31320)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sample-domain1-console-http
+  namespace: weblogic-domain1-ns
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: PathPrefix(`/console`)
+      kind: Rule
+      middlewares:
+        - name: weblogic-tls-headers
+      services:
+        - name: sample-domain1-admin-server
+          port: 7001
+
+---
+# HTTPS route für /quickstart
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sample-domain1-quickstart
+  namespace: weblogic-domain1-ns
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: PathPrefix(`/quickstart`)
+      kind: Rule
+      middlewares:
+        - name: weblogic-tls-headers
+      services:
+        - name: sample-domain1-cluster-cluster-1
+          port: 8001
+  tls: {}
+
+---
+# HTTP route für /quickstart (für WebLogic-Redirects auf http://IP:31320)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sample-domain1-quickstart-http
+  namespace: weblogic-domain1-ns
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: PathPrefix(`/quickstart`)
+      kind: Rule
+      middlewares:
+        - name: weblogic-tls-headers
+      services:
+        - name: sample-domain1-cluster-cluster-1
+          port: 8001
+
+---
+# HTTPS route für /rconsole (WebLogic Remote Console)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sample-domain1-rconsole
+  namespace: weblogic-domain1-ns
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: PathPrefix(`/rconsole`)
+      kind: Rule
+      middlewares:
+        - name: weblogic-tls-headers
+      services:
+        - name: sample-domain1-admin-server
+          port: 7001
+  tls: {}
+
+---
+# HTTP route für /rconsole (für WebLogic-Redirects)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sample-domain1-rconsole-http
+  namespace: weblogic-domain1-ns
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: PathPrefix(`/rconsole`)
+      kind: Rule
+      middlewares:
+        - name: weblogic-tls-headers
+      services:
+        - name: sample-domain1-admin-server
+          port: 7001

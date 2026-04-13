@@ -1,0 +1,16 @@
+# Generierte Archive
+quickstart/models/archive.zip
+
+# Build-Tools (groß, nicht versioniert)
+quickstart/tools/
+
+# Logs
+*.log
+*.out
+
+# Unversiegelte Secrets (niemals einchecken!)
+secrets/*
+!secrets/sealed-*.yaml
+
+# macOS
+.DS_Store

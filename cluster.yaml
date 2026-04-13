@@ -1,0 +1,10 @@
+apiVersion: weblogic.oracle/v1
+kind: Cluster
+metadata:
+  name: sample-domain1-cluster-1
+  namespace: weblogic-domain1-ns
+  labels:
+    weblogic.domainUID: sample-domain1
+spec:
+  clusterName: cluster-1
+  replicas: 2
