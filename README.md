@@ -4,7 +4,7 @@ WebLogic Server 15.1.1 auf Kubernetes (Minikube) mit dem WebLogic Kubernetes Ope
 
 ## Warum WebLogic auf Kubernetes?
 
-Traditionell läuft WebLogic auf dedizierten VMs oder Bare-Metal-Servern — aufwändig zu provisionieren, schwer zu skalieren und fehleranfällig bei manuellen Deployments. Kubernetes löst genau diese Probleme:
+Traditionell läuft WebLogic auf dedizierten VMs oder Bare-Metal-Servern. WebLogic selbst skaliert dabei gut — Dynamic Clusters, Session Replication und Work Manager Queues sind seit Langem eingebaut. Das eigentliche Problem war der Betrieb drumherum: Eine neue Managed-Server-Instanz bedeutete VM beantragen, OS installieren, WebLogic installieren, Cluster beitreten, manuell konfigurieren — Tage statt Minuten, fehleranfällig und schwer reproduzierbar. Kubernetes löst genau diesen operativen Aufwand:
 
 ### Betrieb und Verfügbarkeit
 
@@ -14,7 +14,7 @@ Traditionell läuft WebLogic auf dedizierten VMs oder Bare-Metal-Servern — auf
 
 ### Skalierung
 
-- **Horizontal skalierbar:** Managed Server lassen sich durch eine einzige Änderung an `replicas` in `cluster.yaml` hoch- oder runterskalieren — kein manuelles Klonen von VMs.
+- **Horizontal skalierbar:** Managed Server lassen sich durch eine einzige Änderung an `replicas` in `cluster.yaml` hoch- oder runterskalieren. Der Operator startet die neuen Instanzen, meldet sie am Cluster an und konfiguriert sie — ohne manuellen Eingriff, in Minuten statt Tagen.
 - **Ressourcenlimits:** CPU und Memory werden per Pod definiert, sodass einzelne Domains sich nicht gegenseitig stören.
 
 ### Deployment und Betrieb als Code
