@@ -2,6 +2,39 @@
 
 WebLogic Server 15.1.1 auf Kubernetes (Minikube) mit dem WebLogic Kubernetes Operator, Traefik v3 als Ingress-Controller und Sealed Secrets für sichere Secret-Verwaltung.
 
+## Warum WebLogic auf Kubernetes?
+
+Traditionell läuft WebLogic auf dedizierten VMs oder Bare-Metal-Servern — aufwändig zu provisionieren, schwer zu skalieren und fehleranfällig bei manuellen Deployments. Kubernetes löst genau diese Probleme:
+
+### Betrieb und Verfügbarkeit
+
+- **Automatischer Neustart:** Kubernetes erkennt abgestürzte Pods und startet sie selbsttätig neu — ohne manuellen Eingriff.
+- **Rolling Updates ohne Downtime:** Neue Domain-Versionen werden rolling ausgerollt; der Operator koordiniert die Reihenfolge (Admin-Server zuerst, dann Managed Server).
+- **Selbstheilung:** Fällt ein Node aus, verschiebt Kubernetes die Pods automatisch auf gesunde Nodes.
+
+### Skalierung
+
+- **Horizontal skalierbar:** Managed Server lassen sich durch eine einzige Änderung an `replicas` in `cluster.yaml` hoch- oder runterskalieren — kein manuelles Klonen von VMs.
+- **Ressourcenlimits:** CPU und Memory werden per Pod definiert, sodass einzelne Domains sich nicht gegenseitig stören.
+
+### Deployment und Betrieb als Code
+
+- **GitOps-fähig:** Die gesamte Domain-Konfiguration (Modell, Secrets, Ingress) liegt als YAML im Repository. Änderungen sind nachvollziehbar, reproduzierbar und peer-reviewbar.
+- **Model-in-Image:** Das WDT-Modell beschreibt die Domain deklarativ — kein Clicken in Admin-Konsolen, kein Drift zwischen Umgebungen.
+- **Sealed Secrets:** Verschlüsselte Secrets können sicher in Git versioniert werden, ohne Credentials preiszugeben.
+
+### Isolation und Mandantenfähigkeit
+
+- **Namespace-Isolation:** Jede Domain läuft in einem eigenen Namespace mit eigenen Credentials und Netzwerkregeln — mehrere Teams oder Applikationen auf demselben Cluster ohne gegenseitige Beeinflussung.
+- **Keine gemeinsame Middleware:** Kein geteilter Application-Server für mehrere Apps, der bei einem Fehler alles mitreißt.
+
+### Portabilität
+
+- **Läuft überall:** Minikube lokal, AKS, EKS, OKE oder On-Premises — das gleiche YAML, die gleiche Toolchain.
+- **Kein Vendor-Lock-in auf Infrastruktur-Ebene:** Der Operator abstrahiert den Betrieb von der darunterliegenden Plattform.
+
+---
+
 ## Architektur
 
 ```
