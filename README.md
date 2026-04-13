@@ -222,6 +222,253 @@ kubectl create secret generic sample-domain1-runtime-encryption-secret \
   > secrets/sealed-runtime-encryption-secret.yaml
 ```
 
+## Neue App in eigener Domain deployen
+
+Jede Domain läuft vollständig isoliert in einem eigenen Kubernetes-Namespace mit eigenem Admin-Server, eigenen Managed Servern und eigenen Secrets. Domains teilen sich lediglich den WebLogic Kubernetes Operator und den Ingress-Controller.
+
+### Überblick: Was pro Domain erstellt werden muss
+
+```
+myapp-ns/                          ← eigener Namespace
+  ├── Secrets
+  │     ├── myapp-weblogic-credentials          (versiegelt)
+  │     └── myapp-runtime-encryption-secret     (versiegelt)
+  ├── ocr-secret                   ← Pull-Secret für OCR
+  ├── cluster.yaml                 ← Cluster-Ressource
+  ├── domain.yaml                  ← Domain-Definition
+  └── traefik.yaml                 ← IngressRoutes für diese Domain
+myapp-aux-image:v1                 ← eigenes Auxiliary Image mit WDT-Modell + WAR
+```
+
+### Schritt 1: Namespace anlegen und Operator informieren
+
+```bash
+kubectl create namespace myapp-ns
+
+# Operator so updaten, dass er den neuen Namespace überwacht
+helm upgrade weblogic-operator weblogic-operator/weblogic-operator \
+  --namespace weblogic-operator-ns \
+  --set "domainNamespaces={weblogic-domain1-ns,myapp-ns}" \
+  --reuse-values \
+  --wait
+```
+
+### Schritt 2: Secrets erstellen und versiegeln
+
+```bash
+# Admin-Credentials
+kubectl create secret generic myapp-weblogic-credentials \
+  --from-literal=username=weblogic \
+  --from-literal=password=<SICHERES_PASSWORT> \
+  --namespace myapp-ns \
+  --dry-run=client -o yaml | \
+  kubeseal --controller-namespace kube-system -o yaml \
+  > secrets/sealed-myapp-weblogic-credentials.yaml
+
+# Runtime Encryption Secret (beliebiges starkes Passwort)
+kubectl create secret generic myapp-runtime-encryption-secret \
+  --from-literal=password=<ZUFALLS_PASSWORT> \
+  --namespace myapp-ns \
+  --dry-run=client -o yaml | \
+  kubeseal --controller-namespace kube-system -o yaml \
+  > secrets/sealed-myapp-runtime-encryption-secret.yaml
+
+# OCR Pull-Secret (einmalig pro Namespace)
+kubectl create secret docker-registry ocr-secret \
+  --docker-server=container-registry.oracle.com \
+  --docker-username=<ORACLE_EMAIL> \
+  --docker-password=<ORACLE_PASSWORT> \
+  --namespace myapp-ns
+
+kubectl apply -f secrets/sealed-myapp-weblogic-credentials.yaml
+kubectl apply -f secrets/sealed-myapp-runtime-encryption-secret.yaml
+```
+
+### Schritt 3: WDT-Modell und WAR vorbereiten
+
+Verzeichnisstruktur für die neue App (analog zu `quickstart/`):
+
+```
+myapp/
+└── models/
+    ├── model.yaml          ← WDT Domain-Modell
+    ├── model.properties    ← Port-Variablen etc.
+    └── archive/
+        └── wlsdeploy/
+            └── applications/
+                └── myapp/
+                    ├── WEB-INF/web.xml
+                    └── index.jsp   (oder fertiges .war)
+```
+
+**`myapp/models/model.yaml`** (Minimalbeispiel):
+
+```yaml
+domainInfo:
+    AdminUserName: '@@SECRET:__weblogic-credentials__:username@@'
+    AdminPassword: '@@SECRET:__weblogic-credentials__:password@@'
+    ServerStartMode: dev
+topology:
+    Name: myapp
+    AdminServerName: admin-server
+    Cluster:
+        cluster-1:
+            DynamicServers:
+                ServerNamePrefix: managed-server
+                CalculatedListenPorts: false
+                MaximumDynamicServerCount: 1
+                ServerTemplate: server-template_1
+                DynamicClusterSize: 1
+    Server:
+        admin-server: {}
+    ServerTemplate:
+        server-template_1:
+            ListenPort: '@@PROP:ServerTemp.server-template_1.ListenPort@@'
+            Cluster: cluster-1
+appDeployments:
+    Application:
+        myapp:
+            SourcePath: wlsdeploy/applications/myapp
+            ModuleType: war
+            Target: cluster-1
+```
+
+**`myapp/models/model.properties`**:
+
+```properties
+ServerTemp.server-template_1.ListenPort=8001
+ServerTemp.server-template_1.SSL.ListenPort=8100
+```
+
+> **Jakarta EE Hinweis:** `web.xml` muss das Jakarta EE 9.1 Schema verwenden (Servlet 5.0), keine DTD.
+> Imports in JSPs: `jakarta.servlet.*` statt `javax.servlet.*`.
+
+### Schritt 4: Auxiliary Image bauen
+
+```bash
+cd myapp/models/archive
+zip -r ../archive.zip wlsdeploy/
+cd ../..
+
+imagetool create-aux-image \
+  --tag myapp-aux-image:v1 \
+  --wdtModel models/model.yaml \
+  --wdtVariables models/model.properties \
+  --wdtArchive models/archive.zip \
+  --wdtModelOnly
+
+minikube image load myapp-aux-image:v1
+```
+
+### Schritt 5: Cluster-Ressource (`myapp/cluster.yaml`)
+
+```yaml
+apiVersion: weblogic.oracle/v1
+kind: Cluster
+metadata:
+  name: myapp-cluster-1
+  namespace: myapp-ns
+  labels:
+    weblogic.domainUID: myapp
+spec:
+  clusterName: cluster-1
+  replicas: 1
+```
+
+### Schritt 6: Domain (`myapp/domain.yaml`)
+
+```yaml
+apiVersion: weblogic.oracle/v9
+kind: Domain
+metadata:
+  name: myapp
+  namespace: myapp-ns
+  labels:
+    weblogic.domainUID: myapp
+spec:
+  domainUID: myapp
+  configuration:
+    model:
+      auxiliaryImages:
+        - image: "myapp-aux-image:v1"
+          imagePullPolicy: IfNotPresent
+      runtimeEncryptionSecret: myapp-runtime-encryption-secret
+  domainHomeSourceType: FromModel
+  domainHome: /u01/domains/myapp
+  image: container-registry.oracle.com/middleware/weblogic:15.1.1.0-generic-jdk17-ol8
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: ocr-secret
+  webLogicCredentialsSecret:
+    name: myapp-weblogic-credentials
+  includeServerOutInPodLog: true
+  serverStartPolicy: IfNeeded
+  serverPod:
+    env:
+      - name: JAVA_OPTIONS
+        value: "-Dweblogic.StdoutDebugEnabled=false"
+      - name: USER_MEM_ARGS
+        value: "-Djava.security.egd=file:/dev/./urandom -Xms128m -Xmx256m"
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+  replicas: 1
+  clusters:
+    - name: myapp-cluster-1
+  restartVersion: "1"
+  introspectVersion: "1"
+```
+
+### Schritt 7: Ingress-Routen (`myapp/traefik.yaml`)
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: myapp-route
+  namespace: myapp-ns
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: PathPrefix(`/myapp`)
+      kind: Rule
+      services:
+        - name: myapp-cluster-cluster-1
+          port: 8001
+```
+
+> Der Service-Name folgt dem Muster `<domainUID>-cluster-<clusterName>`.
+> Der Operator erstellt ihn automatisch, sobald die Domain läuft.
+
+### Schritt 8: Alles deployen
+
+```bash
+kubectl apply -f myapp/cluster.yaml
+kubectl apply -f myapp/domain.yaml
+kubectl apply -f myapp/traefik.yaml
+```
+
+### Status prüfen
+
+```bash
+kubectl get pods -n myapp-ns
+kubectl get domain myapp -n myapp-ns
+```
+
+### Isolation zwischen Domains
+
+| Aspekt | Verhalten |
+|--------|-----------|
+| Namespace | vollständig getrennt |
+| Admin-Server | jede Domain hat einen eigenen |
+| Secrets / Credentials | getrennt, kein Zugriff über Domains |
+| Netzwerk | Pods können sich per Service-DNS erreichen, aber die Apps laufen isoliert |
+| Shared | WebLogic Kubernetes Operator, Traefik, Sealed Secrets Controller, OCR Base-Image |
+
+---
+
 ## Technologie-Stack
 
 - **WebLogic Server** 15.1.1 (Jakarta EE 9.1, Servlet 5.0)
