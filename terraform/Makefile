@@ -14,3 +14,5 @@ destroy:
 
 _minikube_start:
 	minikube start --profile=$(PROFILE)
+	kubectl wait --for=condition=Ready node/$(PROFILE) --timeout=120s
+	kubectl wait --for=condition=Available deployment/coredns -n kube-system --timeout=120s
