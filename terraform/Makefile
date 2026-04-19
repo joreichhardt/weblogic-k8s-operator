@@ -4,7 +4,7 @@ PROFILE := $(if $(PROFILE),$(PROFILE),minikube)
 .PHONY: apply plan destroy
 
 apply: _minikube_start
-	terraform apply
+	terraform apply -auto-approve
 
 plan: _minikube_start
 	terraform plan
