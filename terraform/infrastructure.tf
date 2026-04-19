@@ -32,8 +32,8 @@ resource "terraform_data" "namespaces" {
     command = <<-EOT
       kubectl create namespace ${var.operator_namespace} --dry-run=client -o yaml | kubectl apply -f -
       kubectl create namespace ${var.domain_namespace} --dry-run=client -o yaml | kubectl apply -f -
-      kubectl wait --for=jsonpath='{.metadata.name}'=default serviceaccount/default -n ${var.operator_namespace} --timeout=60s
-      kubectl wait --for=jsonpath='{.metadata.name}'=default serviceaccount/default -n ${var.domain_namespace} --timeout=60s
+      until kubectl get serviceaccount default -n ${var.operator_namespace} 2>/dev/null; do sleep 2; done
+      until kubectl get serviceaccount default -n ${var.domain_namespace} 2>/dev/null; do sleep 2; done
     EOT
   }
   depends_on = [terraform_data.minikube_start]
