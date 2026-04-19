@@ -22,14 +22,14 @@ variable "weblogic_operator_version" {
   default     = "4.3.7"
 }
 
-variable "ocr_username" {
-  description = "Oracle Container Registry username (Oracle SSO email)"
+variable "aux_image_tag" {
+  description = "Tag des Auxiliary Image (quick-start-aux-image:vN)"
   type        = string
-  sensitive   = true
+  default     = "quick-start-aux-image:v7"
 }
 
-variable "ocr_password" {
-  description = "Oracle Container Registry password (Oracle SSO password)"
+variable "weblogic_image" {
+  description = "WebLogic base image aus Oracle Container Registry"
   type        = string
-  sensitive   = true
+  default     = "container-registry.oracle.com/middleware/weblogic:15.1.1.0-generic-jdk17-ol8"
 }

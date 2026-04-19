@@ -1,4 +1,1 @@
 kube_context = "minikube"
-
-ocr_username = "your-oracle-sso@example.com"
-ocr_password = "your-oracle-sso-password"

@@ -11,7 +11,7 @@ spec:
   configuration:
     model:
       auxiliaryImages:
-        - image: "quick-start-aux-image:v6"
+        - image: "${aux_image_tag}"
           imagePullPolicy: IfNotPresent
       runtimeEncryptionSecret: sample-domain1-runtime-encryption-secret
 
@@ -20,9 +20,6 @@ spec:
 
   image: container-registry.oracle.com/middleware/weblogic:15.1.1.0-generic-jdk17-ol8
   imagePullPolicy: IfNotPresent
-
-  imagePullSecrets:
-    - name: ocr-secret
 
   webLogicCredentialsSecret:
     name: sample-domain1-weblogic-credentials
@@ -46,5 +43,5 @@ spec:
   clusters:
     - name: sample-domain1-cluster-1
 
-  restartVersion: "6"
-  introspectVersion: "6"
+  restartVersion: "7"
+  introspectVersion: "7"

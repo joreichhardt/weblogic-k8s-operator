@@ -1,0 +1,144 @@
+{
+  "version": 4,
+  "terraform_version": "1.14.8",
+  "serial": 14,
+  "lineage": "0841d856-cc78-329c-2898-1093a39ba1c5",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "data",
+      "type": "kubectl_file_documents",
+      "name": "traefik_routes",
+      "provider": "provider[\"registry.terraform.io/gavinbunney/kubectl\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "content": "apiVersion: traefik.io/v1alpha1\nkind: Middleware\nmetadata:\n  name: weblogic-tls-headers\n  namespace: weblogic-domain1-ns\nspec:\n  headers:\n    customRequestHeaders:\n      WL-Proxy-SSL: \"true\"\n      X-Forwarded-Proto: \"https\"\n\n---\n# HTTPS route für /console\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-console\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/console`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001\n  tls: {}\n\n---\n# HTTP route für /console (für WebLogic-Redirects auf http://IP:31320)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-console-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/console`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001\n\n---\n# HTTPS route für /quickstart\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-quickstart\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/quickstart`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-cluster-cluster-1\n          port: 8001\n  tls: {}\n\n---\n# HTTP route für /quickstart (für WebLogic-Redirects auf http://IP:31320)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-quickstart-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/quickstart`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-cluster-cluster-1\n          port: 8001\n\n---\n# HTTPS route für /rconsole (WebLogic Remote Console)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-rconsole\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/rconsole`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001\n  tls: {}\n\n---\n# HTTP route für /rconsole (für WebLogic-Redirects)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-rconsole-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/rconsole`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001\n",
+            "documents": [
+              "apiVersion: traefik.io/v1alpha1\nkind: Middleware\nmetadata:\n  name: weblogic-tls-headers\n  namespace: weblogic-domain1-ns\nspec:\n  headers:\n    customRequestHeaders:\n      WL-Proxy-SSL: \"true\"\n      X-Forwarded-Proto: \"https\"",
+              "# HTTPS route für /console\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-console\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/console`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001\n  tls: {}",
+              "# HTTP route für /console (für WebLogic-Redirects auf http://IP:31320)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-console-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/console`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001",
+              "# HTTPS route für /quickstart\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-quickstart\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/quickstart`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-cluster-cluster-1\n          port: 8001\n  tls: {}",
+              "# HTTP route für /quickstart (für WebLogic-Redirects auf http://IP:31320)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-quickstart-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/quickstart`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-cluster-cluster-1\n          port: 8001",
+              "# HTTPS route für /rconsole (WebLogic Remote Console)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-rconsole\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/rconsole`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001\n  tls: {}",
+              "# HTTP route für /rconsole (für WebLogic-Redirects)\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-rconsole-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n    - websecure\n  routes:\n    - match: PathPrefix(`/rconsole`)\n      kind: Rule\n      middlewares:\n        - name: weblogic-tls-headers\n      services:\n        - name: sample-domain1-admin-server\n          port: 7001"
+            ],
+            "id": "4f322e745c64ebec5ecf07a8569b31704b92d746e0ecd711823428e1604d1f5d",
+            "manifests": {
+              "/apis/traefik.io/v1alpha1/namespaces/weblogic-domain1-ns/ingressroutes/sample-domain1-console": "apiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-console\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n  - websecure\n  routes:\n  - kind: Rule\n    match: PathPrefix(`/console`)\n    middlewares:\n    - name: weblogic-tls-headers\n    services:\n    - name: sample-domain1-admin-server\n      port: 7001\n  tls: {}\n",
+              "/apis/traefik.io/v1alpha1/namespaces/weblogic-domain1-ns/ingressroutes/sample-domain1-console-http": "apiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-console-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n  - websecure\n  routes:\n  - kind: Rule\n    match: PathPrefix(`/console`)\n    middlewares:\n    - name: weblogic-tls-headers\n    services:\n    - name: sample-domain1-admin-server\n      port: 7001\n",
+              "/apis/traefik.io/v1alpha1/namespaces/weblogic-domain1-ns/ingressroutes/sample-domain1-quickstart": "apiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-quickstart\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n  - websecure\n  routes:\n  - kind: Rule\n    match: PathPrefix(`/quickstart`)\n    middlewares:\n    - name: weblogic-tls-headers\n    services:\n    - name: sample-domain1-cluster-cluster-1\n      port: 8001\n  tls: {}\n",
+              "/apis/traefik.io/v1alpha1/namespaces/weblogic-domain1-ns/ingressroutes/sample-domain1-quickstart-http": "apiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-quickstart-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n  - websecure\n  routes:\n  - kind: Rule\n    match: PathPrefix(`/quickstart`)\n    middlewares:\n    - name: weblogic-tls-headers\n    services:\n    - name: sample-domain1-cluster-cluster-1\n      port: 8001\n",
+              "/apis/traefik.io/v1alpha1/namespaces/weblogic-domain1-ns/ingressroutes/sample-domain1-rconsole": "apiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-rconsole\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n  - websecure\n  routes:\n  - kind: Rule\n    match: PathPrefix(`/rconsole`)\n    middlewares:\n    - name: weblogic-tls-headers\n    services:\n    - name: sample-domain1-admin-server\n      port: 7001\n  tls: {}\n",
+              "/apis/traefik.io/v1alpha1/namespaces/weblogic-domain1-ns/ingressroutes/sample-domain1-rconsole-http": "apiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: sample-domain1-rconsole-http\n  namespace: weblogic-domain1-ns\nspec:\n  entryPoints:\n  - websecure\n  routes:\n  - kind: Rule\n    match: PathPrefix(`/rconsole`)\n    middlewares:\n    - name: weblogic-tls-headers\n    services:\n    - name: sample-domain1-admin-server\n      port: 7001\n",
+              "/apis/traefik.io/v1alpha1/namespaces/weblogic-domain1-ns/middlewares/weblogic-tls-headers": "apiVersion: traefik.io/v1alpha1\nkind: Middleware\nmetadata:\n  name: weblogic-tls-headers\n  namespace: weblogic-domain1-ns\nspec:\n  headers:\n    customRequestHeaders:\n      WL-Proxy-SSL: \"true\"\n      X-Forwarded-Proto: https\n"
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "sealed_secrets",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "atomic": false,
+            "chart": "sealed-secrets",
+            "cleanup_on_fail": false,
+            "create_namespace": false,
+            "dependency_update": false,
+            "description": "Install complete",
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "sealed-secrets",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": [
+              {
+                "app_version": "0.36.6",
+                "chart": "sealed-secrets",
+                "first_deployed": 1776102966,
+                "last_deployed": 1776102966,
+                "name": "sealed-secrets",
+                "namespace": "kube-system",
+                "notes": "** Please be patient while the chart is being deployed **\n\nYou should now be able to create sealed secrets.\n\n1. Install the client-side tool (kubeseal) as explained in the docs below:\n\n    https://github.com/bitnami-labs/sealed-secrets#installation-from-source\n\n2. Create a sealed secret file running the command below:\n\n    kubectl create secret generic secret-name --dry-run=client --from-literal=foo=bar -o [json|yaml] | \\\n    kubeseal \\\n      --controller-name=sealed-secrets \\\n      --controller-namespace=kube-system \\\n      --format yaml \u003e mysealedsecret.[json|yaml]\n\nThe file mysealedsecret.[json|yaml] is a commitable file.\n\nIf you would rather not need access to the cluster to generate the sealed secret you can run:\n\n    kubeseal \\\n      --controller-name=sealed-secrets \\\n      --controller-namespace=kube-system \\\n      --fetch-cert \u003e mycert.pem\n\nto retrieve the public cert used for encryption and store it locally. You can then run 'kubeseal --cert mycert.pem' instead to use the local cert e.g.\n\n    kubectl create secret generic secret-name --dry-run=client --from-literal=foo=bar -o [json|yaml] | \\\n    kubeseal \\\n      --controller-name=sealed-secrets \\\n      --controller-namespace=kube-system \\\n      --format [json|yaml] --cert mycert.pem \u003e mysealedsecret.[json|yaml]\n\n3. Apply the sealed secret\n\n    kubectl create -f mysealedsecret.[json|yaml]\n\nRunning 'kubectl get secret secret-name -o [json|yaml]' will show the decrypted secret that was generated from the sealed secret.\n\nBoth the SealedSecret and generated Secret must have the same name and namespace.\n",
+                "revision": 1,
+                "values": "{}",
+                "version": "2.18.5"
+              }
+            ],
+            "name": "sealed-secrets",
+            "namespace": "kube-system",
+            "pass_credentials": false,
+            "postrender": [],
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": null,
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "reuse_values": false,
+            "set": [],
+            "set_list": [],
+            "set_sensitive": [],
+            "skip_crds": false,
+            "status": "deployed",
+            "timeout": 300,
+            "upgrade_install": null,
+            "values": null,
+            "verify": false,
+            "version": "2.18.5",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "minikube_start",
+      "provider": "provider[\"terraform.io/builtin/terraform\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "41107858-2677-531b-e24a-3935cd74f7c2",
+            "input": null,
+            "output": null,
+            "triggers_replace": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

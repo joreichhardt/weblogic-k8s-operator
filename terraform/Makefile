@@ -1,7 +1,7 @@
 PROFILE ?= $(shell grep -s 'kube_context' terraform.tfvars | awk -F'"' '{print $$2}')
 PROFILE := $(if $(PROFILE),$(PROFILE),minikube)
 
-.PHONY: apply plan destroy
+.PHONY: apply plan destroy ocr-login
 
 apply: _minikube_start
 	terraform apply -auto-approve
@@ -11,6 +11,9 @@ plan: _minikube_start
 
 destroy:
 	terraform destroy
+
+ocr-login: _minikube_start
+	eval $$(minikube docker-env --profile=$(PROFILE)) && docker login container-registry.oracle.com
 
 _minikube_start:
 	minikube start --profile=$(PROFILE)
