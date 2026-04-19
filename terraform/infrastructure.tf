@@ -1,64 +1,53 @@
-# ── Namespaces ────────────────────────────────────────────────────────────────
+# ── Minikube ───────────────────────────────────────────────────────────────────
 
-resource "kubernetes_namespace" "operator" {
-  metadata {
-    name = var.operator_namespace
+resource "terraform_data" "minikube_start" {
+  input = var.kube_context
+
+  provisioner "local-exec" {
+    command = "minikube start --profile=${self.input}"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "minikube delete --profile=${self.input}"
   }
 }
 
-resource "kubernetes_namespace" "domain" {
-  metadata {
-    name = var.domain_namespace
+# ── Namespaces ────────────────────────────────────────────────────────────────
+
+resource "terraform_data" "namespaces" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      kubectl create namespace ${var.operator_namespace} --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create namespace ${var.domain_namespace} --dry-run=client -o yaml | kubectl apply -f -
+    EOT
   }
+  depends_on = [terraform_data.minikube_start]
 }
 
 # ── Helm: Sealed Secrets Controller ───────────────────────────────────────────
 
-resource "helm_release" "sealed_secrets" {
-  name       = "sealed-secrets"
-  repository = "https://bitnami-labs.github.io/sealed-secrets"
-  chart      = "sealed-secrets"
-  namespace  = "kube-system"
-  wait       = true
+resource "terraform_data" "sealed_secrets" {
+  provisioner "local-exec" {
+    command = "helm list -n kube-system | grep -q sealed-secrets || helm upgrade --install sealed-secrets sealed-secrets --repo https://bitnami-labs.github.io/sealed-secrets --namespace kube-system --wait"
+  }
+  depends_on = [terraform_data.minikube_start]
 }
 
 # ── Helm: Traefik ──────────────────────────────────────────────────────────────
 
-resource "helm_release" "traefik" {
-  name       = "traefik"
-  repository = "https://traefik.github.io/charts"
-  chart      = "traefik"
-  namespace  = "kube-system"
-  wait       = true
-
-  set {
-    name  = "ports.websecure.tls.enabled"
-    value = "false"
+resource "terraform_data" "traefik" {
+  provisioner "local-exec" {
+    command = "helm list -n traefik | grep -q traefik || helm upgrade --install traefik traefik --repo https://traefik.github.io/charts --namespace traefik --create-namespace --wait"
   }
-
-  set {
-    name  = "ports.web.redirectTo.port"
-    value = "websecure"
-  }
+  depends_on = [terraform_data.minikube_start]
 }
 
 # ── Helm: WebLogic Kubernetes Operator ────────────────────────────────────────
 
-resource "helm_release" "weblogic_operator" {
-  name       = "weblogic-operator"
-  repository = "https://oracle.github.io/weblogic-kubernetes-operator/charts"
-  chart      = "weblogic-operator"
-  version    = var.weblogic_operator_version
-  namespace  = var.operator_namespace
-  wait       = true
-
-  set {
-    name  = "domainNamespaces[0]"
-    value = var.domain_namespace
+resource "terraform_data" "weblogic_operator" {
+  provisioner "local-exec" {
+    command = "helm list -n ${var.operator_namespace} | grep -q weblogic-operator || helm upgrade --install weblogic-operator weblogic-operator --repo https://oracle.github.io/weblogic-kubernetes-operator/charts --version ${var.weblogic_operator_version} --namespace ${var.operator_namespace} --set 'domainNamespaces[0]=${var.domain_namespace}' --wait"
   }
-
-  depends_on = [
-    kubernetes_namespace.operator,
-    kubernetes_namespace.domain,
-  ]
+  depends_on = [terraform_data.namespaces]
 }
