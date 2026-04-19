@@ -87,7 +87,7 @@ resource "terraform_data" "weblogic_operator" {
   }
 
   provisioner "local-exec" {
-    command = "helm upgrade --install weblogic-operator weblogic-operator --repo https://oracle.github.io/weblogic-kubernetes-operator/charts --version ${var.weblogic_operator_version} --namespace ${var.operator_namespace} --set 'domainNamespaces[0]=${var.domain_namespace}' --wait"
+    command = "helm upgrade --install weblogic-operator weblogic-operator --repo https://oracle.github.io/weblogic-kubernetes-operator/charts --version ${var.weblogic_operator_version} --namespace ${var.operator_namespace} --set domainNamespaceSelectionStrategy=List --set 'domainNamespaces[0]=${var.domain_namespace}' --wait"
   }
   depends_on = [terraform_data.namespaces]
 }
