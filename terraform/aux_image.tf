@@ -11,8 +11,9 @@ resource "terraform_data" "aux_image" {
     command = <<-EOT
       eval $(minikube docker-env --profile=${var.kube_context})
       docker images -q ${var.aux_image_tag} | grep -q . && exit 0
-      cd ${path.module}/../quickstart/models/archive && zip -r ../archive.zip wlsdeploy/
-      cd ${path.module}/../quickstart
+      QUICKSTART="${abspath(path.module)}/../quickstart"
+      (cd "$QUICKSTART/models/archive" && zip -r ../archive.zip wlsdeploy/)
+      cd "$QUICKSTART"
       JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))) \
         ./tools/imagetool/bin/imagetool.sh createAuxImage \
         --tag ${var.aux_image_tag} \

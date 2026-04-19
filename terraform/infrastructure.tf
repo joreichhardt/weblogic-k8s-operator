@@ -58,7 +58,7 @@ resource "terraform_data" "traefik" {
   }
 
   provisioner "local-exec" {
-    command = "helm upgrade --install traefik traefik --repo https://traefik.github.io/charts --namespace traefik --create-namespace --wait"
+    command = "helm upgrade --install traefik traefik --repo https://traefik.github.io/charts --namespace traefik --create-namespace --wait --timeout 10m"
   }
   depends_on = [terraform_data.minikube_start]
 }
