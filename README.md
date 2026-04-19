@@ -302,7 +302,9 @@ kubectl apply -f domain.yaml
 
 ## Secrets neu erstellen
 
-Wenn der Sealed Secrets Controller neu installiert wird (neuer öffentlicher Schlüssel), müssen die Secrets neu versiegelt werden:
+> **Normalerweise nicht nötig:** `make apply` sichert den Sealed-Secrets-Controller-Key nach `~/.sealed-secrets-key.yaml` und stellt ihn bei jedem neuen Cluster automatisch wieder her. Die Secrets im Repo bleiben dauerhaft gültig.
+
+Nur nötig wenn `~/.sealed-secrets-key.yaml` verloren gegangen ist (neuer Rechner, etc.):
 
 ```bash
 # Weblogic Credentials
@@ -311,7 +313,7 @@ kubectl create secret generic sample-domain1-weblogic-credentials \
   --from-literal=password=<PASSWORT> \
   --namespace weblogic-domain1-ns \
   --dry-run=client -o yaml | \
-  kubeseal --controller-namespace kube-system -o yaml \
+  kubeseal --controller-namespace kube-system --controller-name sealed-secrets -o yaml \
   > secrets/sealed-weblogic-credentials.yaml
 
 # Runtime Encryption Secret
@@ -319,8 +321,12 @@ kubectl create secret generic sample-domain1-runtime-encryption-secret \
   --from-literal=password=<PASSWORT> \
   --namespace weblogic-domain1-ns \
   --dry-run=client -o yaml | \
-  kubeseal --controller-namespace kube-system -o yaml \
+  kubeseal --controller-namespace kube-system --controller-name sealed-secrets -o yaml \
   > secrets/sealed-runtime-encryption-secret.yaml
+
+kubectl apply -f secrets/sealed-weblogic-credentials.yaml
+kubectl apply -f secrets/sealed-runtime-encryption-secret.yaml
+git add secrets/ && git commit -m "Re-seal secrets"
 ```
 
 ## Neue App in eigener Domain deployen
