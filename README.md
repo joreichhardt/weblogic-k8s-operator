@@ -78,7 +78,7 @@ Zugang zum Oracle Container Registry (OCR) ist erforderlich für das WebLogic Ba
 
 ## Deployment mit Terraform
 
-Alternativ zum manuellen Setup kann die gesamte Infrastruktur mit Terraform aufgesetzt werden. Terraform übernimmt dabei Namespaces, Helm-Releases und Kubernetes-Ressourcen — das Bauen des Auxiliary Image bleibt ein separater Build-Schritt.
+Alternativ zum manuellen Setup kann die gesamte Infrastruktur mit Terraform aufgesetzt werden. Terraform übernimmt dabei Minikube, Namespaces, Helm-Releases und Kubernetes-Ressourcen — das Bauen des Auxiliary Image bleibt ein separater Build-Schritt.
 
 ```bash
 cd terraform
@@ -87,17 +87,26 @@ cp terraform.tfvars.example terraform.tfvars
 # terraform.tfvars mit OCR-Credentials befüllen (wird nicht eingecheckt)
 
 terraform init
-terraform apply
+make apply    # startet Minikube, dann terraform apply
 ```
+
+Teardown:
+
+```bash
+make destroy  # terraform destroy + minikube delete
+```
+
+Das direkte `terraform apply` / `terraform plan` schlägt fehl, wenn Minikube noch nicht läuft, weil die Kubernetes-Provider beim Plan bereits eine laufende API erwarten. Das Makefile startet Minikube vorher.
 
 **Was Terraform deployt:**
 
-| Ressource | Tool |
-|-----------|------|
-| Namespaces (`weblogic-operator-ns`, `weblogic-domain1-ns`) | kubernetes-Provider |
-| Sealed Secrets Controller | helm-Provider |
-| Traefik v3 | helm-Provider |
-| WebLogic Kubernetes Operator | helm-Provider |
+| Ressource | Wie |
+|-----------|-----|
+| Minikube starten / beim Destroy löschen | `local-exec` |
+| Namespaces (`weblogic-operator-ns`, `weblogic-domain1-ns`) | `local-exec` / kubectl |
+| Sealed Secrets Controller | Helm |
+| Traefik v3 | Helm |
+| WebLogic Kubernetes Operator | Helm |
 | OCR Pull Secret | kubernetes-Provider |
 | Sealed Secrets (Credentials) | kubectl-Provider |
 | Domain, Cluster | kubectl-Provider |
@@ -184,15 +193,15 @@ zip -r ../archive.zip wlsdeploy/
 cd ../..
 
 # Image bauen (imagetool muss konfiguriert sein)
-imagetool create-aux-image \
-  --tag quick-start-aux-image:v6 \
+eval $(minikube docker-env)
+JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))) \
+imagetool createAuxImage \
+  --tag quick-start-aux-image:v7 \
   --wdtModel models/model.yaml \
   --wdtVariables models/model.properties \
-  --wdtArchive models/archive.zip \
-  --wdtModelOnly
+  --wdtArchive models/archive.zip
 
-# Image in Minikube laden
-minikube image load quick-start-aux-image:v6
+# Image landet direkt in Minikubes Docker-Daemon (kein separates image load nötig)
 ```
 
 ### 8. Domain und Cluster deployen
@@ -222,13 +231,16 @@ minikube ip
 
 NodePort ermitteln:
 ```bash
-kubectl get svc -n kube-system traefik
+kubectl get svc -n traefik traefik
 ```
 
 | Anwendung | URL |
 |-----------|-----|
-| WebLogic Remote Console | `http://<MINIKUBE_IP>:<NODEPORT>/rconsole` |
-| Quickstart App | `http://<MINIKUBE_IP>:<NODEPORT>/quickstart` |
+| WebLogic Admin Console | `https://<MINIKUBE_IP>:<HTTPS_NODEPORT>/console` |
+| WebLogic Remote Console | `https://<MINIKUBE_IP>:<HTTPS_NODEPORT>/rconsole` |
+| Quickstart App | `https://<MINIKUBE_IP>:<HTTPS_NODEPORT>/quickstart` |
+
+> Der HTTPS-NodePort (443) ist typischerweise `31320`. Das self-signed Zertifikat wird von Terraform automatisch generiert — der Browser zeigt beim ersten Aufruf eine Warnung.
 
 ## Verzeichnisstruktur
 
@@ -240,14 +252,21 @@ kubectl get svc -n kube-system traefik
 ├── secrets/
 │   ├── sealed-weblogic-credentials.yaml # Admin-Credentials (verschlüsselt)
 │   └── sealed-runtime-encryption-secret.yaml
-└── quickstart/
-    └── models/
-        ├── model.yaml                   # WDT Domain-Modell
-        ├── model.properties             # Konfigurationsvariablen
-        └── archive/
-            └── wlsdeploy/
-                └── applications/
-                    └── quickstart/      # Sample WAR (index.jsp + web.xml)
+├── quickstart/
+│   └── models/
+│       ├── model.yaml                   # WDT Domain-Modell
+│       ├── model.properties             # Konfigurationsvariablen
+│       └── archive/
+│           └── wlsdeploy/
+│               └── applications/
+│                   └── quickstart/      # Sample WAR (index.jsp + web.xml)
+└── terraform/
+    ├── Makefile                         # make apply / make destroy
+    ├── main.tf                          # Provider-Konfiguration
+    ├── infrastructure.tf                # Minikube, Namespaces, Helm-Releases
+    ├── weblogic.tf                      # Secrets, Domain, Cluster, Ingress
+    ├── variables.tf
+    └── terraform.tfvars.example
 ```
 
 ## Konfiguration
@@ -258,8 +277,12 @@ Nach Änderungen am Modell muss das Auxiliary Image neu gebaut und die `introspe
 
 ```bash
 # image neu bauen (v7 als Beispiel)
-imagetool create-aux-image --tag quick-start-aux-image:v7 ...
-minikube image load quick-start-aux-image:v7
+eval $(minikube docker-env)
+JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))) \
+imagetool createAuxImage --tag quick-start-aux-image:v7 \
+  --wdtModel models/model.yaml \
+  --wdtVariables models/model.properties \
+  --wdtArchive models/archive.zip
 ```
 
 `domain.yaml` aktualisieren:
