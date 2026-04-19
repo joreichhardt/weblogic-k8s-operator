@@ -47,7 +47,21 @@ resource "terraform_data" "sealed_secrets" {
   }
 
   provisioner "local-exec" {
-    command = "helm upgrade --install sealed-secrets sealed-secrets --repo https://bitnami-labs.github.io/sealed-secrets --namespace kube-system --wait"
+    command = <<-EOT
+      KEY_FILE="$HOME/.sealed-secrets-key.yaml"
+      if [ -f "$KEY_FILE" ]; then
+        kubectl apply -f "$KEY_FILE"
+      fi
+      helm upgrade --install sealed-secrets sealed-secrets \
+        --repo https://bitnami-labs.github.io/sealed-secrets \
+        --namespace kube-system --wait
+      if [ ! -f "$KEY_FILE" ]; then
+        kubectl get secret -n kube-system \
+          -l sealedsecrets.bitnami.com/sealed-secrets-key=active \
+          -o yaml > "$KEY_FILE"
+        echo "Sealed Secrets key saved to $KEY_FILE"
+      fi
+    EOT
   }
   depends_on = [terraform_data.minikube_start]
 }
